@@ -34,6 +34,9 @@ namespace ChatSystem
                 case FunctionMode.janken:
                     BotJanken();
                     break;
+                case FunctionMode.shiritori:
+                    siritori();
+                    break;
                 default:
                     Console.WriteLine("not suported");
                     break;
@@ -393,6 +396,93 @@ namespace ChatSystem
                     {
                         Console.WriteLine($"送信エラー：{re.ToString()} Error code: {chatSystem.resultMessage}");
                         break;
+                    }
+                }
+                turn = !turn;
+            }
+            chatSystem.ShutDownColse();
+        }
+
+        static void siritori()
+        {
+            ChatSystem.Buffer buffer = new ChatSystem.Buffer(maxLength);
+            bool turn = (connectMode == ChatSystem.ConnectMode.host);
+            string received = string.Empty;
+            bool end=false;
+            string r_word = string.Empty;
+            int a;
+            while (true)
+            {
+                if (turn)
+                {   // 受信
+                    buffer = new ChatSystem.Buffer(maxLength);
+                    ChatSystem.EResult re = chatSystem.Receive(buffer);
+                    if (re == ChatSystem.EResult.success)
+                    {
+                        received = Encoding.UTF8.GetString(buffer.content).Replace(EOF, "");
+                        int l = received.Length;
+                        if (received[0] != '\0')
+                        {   // 正常にメッセージを受信
+                            Console.WriteLine($"受信メッセージ：{received}");
+                            a = r_word.Length;
+                            Console.WriteLine("文字数＝"+a);
+                        }
+                        else if (r_word.Substring(r_word.Length - 1)=="ん")
+                        {
+                            Console.WriteLine($"受信メッセージ：{received}");
+                            Console.WriteLine("あなたの勝ち");
+                            end = true;
+                            
+                        }
+                        else
+                        {   // 正常に終了を受信
+                            Console.WriteLine("相手から終了を受信");
+                            break;
+                        }
+                    }
+                    else
+                    {   //　受信エラー
+                        Console.WriteLine($"受信エラー：{chatSystem.resultMessage} ");
+                        break;
+                    }
+                }
+                else
+                {   // 送信
+                    if (end == false)
+                    {
+                        Console.Write("送るメッセージ：");
+                        string inputSt = Console.ReadLine();    // 入力文字で送信
+                        r_word = inputSt;
+                        if (inputSt.Length > maxLength)
+                        {
+                            inputSt = inputSt.Substring(0, maxLength - EOF.Length);
+                        }
+                        inputSt += EOF;
+                        buffer.content = Encoding.UTF8.GetBytes(inputSt);
+                        buffer.length = buffer.content.Length;
+                        ChatSystem.EResult re = chatSystem.Send(buffer);
+                        if (re != ChatSystem.EResult.success)
+                        {
+                            Console.WriteLine($"送信エラー：{re.ToString()} Error code: {chatSystem.resultMessage}");
+                            break;
+                        }
+                    }
+                    if (end == true)
+                    {
+                        string inputSt = "あなたの負け";    // 入力文字で送信
+                        if (inputSt.Length > maxLength)
+                        {
+                            inputSt = inputSt.Substring(0, maxLength - EOF.Length);
+                        }
+                        inputSt += EOF;
+                        buffer.content = Encoding.UTF8.GetBytes(inputSt);
+                        buffer.length = buffer.content.Length;
+                        ChatSystem.EResult re = chatSystem.Send(buffer);
+                        if (re != ChatSystem.EResult.success)
+                        {
+                            Console.WriteLine($"送信エラー：{re.ToString()} Error code: {chatSystem.resultMessage}");
+                            break;
+                        }
                     }
                 }
                 turn = !turn;
